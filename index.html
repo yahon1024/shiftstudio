@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SHIFT — Build. Create. Ship.</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet"/>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:      #0b0b0b;
+  --surface: #141414;
+  --card:    #181818;
+  --line:    rgba(255,255,255,0.07);
+  --cyan:    #00e5ff;
+  --magenta: #ff00e5;
+  --white:   #f0eeeb;
+  --muted:   #6b6b6b;
+  --font-h:  'Space Grotesk', sans-serif;
+  --font-s:  'Instrument Serif', serif;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--white);
+  font-family: var(--font-h);
+  overflow-x: hidden;
+  cursor: none;
+}
+
+/* ─── Cursor ─── */
+#c-dot {
+  position: fixed; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--cyan); pointer-events: none; z-index: 9999;
+  transform: translate(-50%,-50%);
+  box-shadow: 0 0 10px var(--cyan), 0 0 24px rgba(0,229,255,0.4);
+  transition: background .2s;
+}
+#c-ring {
+  position: fixed; width: 32px; height: 32px; border-radius: 50%;
+  border: 1px solid rgba(0,229,255,0.35);
+  pointer-events: none; z-index: 9998;
+  transform: translate(-50%,-50%);
+  transition: width .22s, height .22s, border-color .22s,
+              left .07s cubic-bezier(.16,1,.3,1), top .07s cubic-bezier(.16,1,.3,1);
+}
+body:has(a:hover) #c-ring,
+body:has(button:hover) #c-ring { width: 48px; height: 48px; border-color: var(--magenta); }
+
+/* ─── Nav ─── */
+nav {
+  position: fixed; top: 0; width: 100%; z-index: 100;
+  padding: 20px 48px;
+  display: flex; justify-content: space-between; align-items: center;
+  border-bottom: 1px solid transparent;
+  transition: background .4s, border-color .4s;
+}
+nav.scrolled {
+  background: rgba(11,11,11,0.85);
+  backdrop-filter: blur(20px);
+  border-color: var(--line);
+}
+.nav-logo {
+  font-size: 1.1rem; font-weight: 700; letter-spacing: .12em;
+  color: var(--white); text-decoration: none; cursor: none;
+}
+.nav-logo span { color: var(--cyan); }
+.nav-links { display: flex; gap: 40px; list-style: none; }
+.nav-links a {
+  font-size: .7rem; letter-spacing: .18em; text-transform: uppercase;
+  color: var(--muted); text-decoration: none; transition: color .2s; cursor: none;
+}
+.nav-links a:hover { color: var(--white); }
+.nav-cta {
+  font-family: var(--font-h); font-size: .7rem; font-weight: 700;
+  letter-spacing: .18em; text-transform: uppercase;
+  background: var(--white); color: var(--bg);
+  border: none; padding: 10px 24px; cursor: none;
+  transition: background .2s, color .2s;
+}
+.nav-cta:hover { background: var(--cyan); color: var(--bg); }
+
+/* ─── Hero ─── */
+#hero {
+  min-height: 100vh;
+  display: flex; flex-direction: column; justify-content: flex-end;
+  padding: 0 48px 80px;
+  position: relative; overflow: hidden;
+}
+#hero-canvas {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+}
+.hero-inner { position: relative; z-index: 2; max-width: 1000px; width: 100%; }
+
+.hero-tag {
+  display: inline-flex; align-items: center; gap: 10px;
+  font-size: .65rem; letter-spacing: .25em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 32px;
+}
+.hero-tag::before {
+  content: ''; display: block; width: 32px; height: 1px; background: var(--cyan);
+}
+
+.hero-h1 {
+  font-size: clamp(3.6rem, 8vw, 8rem);
+  font-weight: 700; line-height: .92; letter-spacing: -.04em;
+  margin-bottom: 32px;
+}
+.hero-h1 em {
+  font-family: var(--font-s); font-style: italic; font-weight: 400;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(240,238,235,.35);
+}
+.hero-h1 .accent { color: var(--cyan); }
+
+.hero-sub {
+  font-size: 1rem; font-weight: 300; color: var(--muted);
+  line-height: 1.7; max-width: 460px; margin-bottom: 48px;
+}
+
+.hero-actions { display: flex; gap: 16px; flex-wrap: wrap; }
+.btn-fill {
+  font-size: .72rem; font-weight: 700; letter-spacing: .15em; text-transform: uppercase;
+  background: var(--cyan); color: var(--bg); border: none;
+  padding: 15px 36px; cursor: none;
+  transition: box-shadow .25s, background .25s;
+}
+.btn-fill:hover { box-shadow: 0 0 28px rgba(0,229,255,.45); }
+.btn-outline {
+  font-size: .72rem; font-weight: 700; letter-spacing: .15em; text-transform: uppercase;
+  background: transparent; color: var(--white);
+  border: 1px solid rgba(255,255,255,.15);
+  padding: 15px 36px; cursor: none;
+  transition: border-color .25s, color .25s;
+}
+.btn-outline:hover { border-color: rgba(255,255,255,.5); }
+
+/* scroll hint */
+.scroll-hint {
+  position: absolute; right: 48px; bottom: 80px; z-index: 2;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+}
+.scroll-hint span {
+  font-size: .55rem; letter-spacing: .25em; text-transform: uppercase;
+  color: var(--muted); writing-mode: vertical-rl;
+}
+.scroll-line {
+  width: 1px; height: 48px;
+  background: linear-gradient(180deg, var(--cyan), transparent);
+  animation: scroll-pulse 2s ease-in-out infinite;
+}
+@keyframes scroll-pulse {
+  0%,100% { opacity: 1; transform: scaleY(1); }
+  50%      { opacity: .3; transform: scaleY(.6); }
+}
+
+/* ─── 3D Title ─── */
+#title-3d {
+  position: relative; z-index: 2;
+  width: 100%;
+  display: flex; flex-direction: column;
+  align-items: flex-start; justify-content: center;
+  perspective: 900px;
+  margin-bottom: 32px;
+  transform-style: preserve-3d;
+}
+.title-row {
+  display: flex; gap: 0;
+  transform-style: preserve-3d;
+}
+.t-letter {
+  font-family: var(--font-h);
+  font-size: clamp(5rem, 12vw, 11.5rem);
+  font-weight: 700;
+  letter-spacing: -.04em;
+  line-height: 1;
+  display: inline-block;
+  transform-style: preserve-3d;
+  will-change: transform;
+  color: var(--white);
+  position: relative;
+}
+.t-letter.cyan  { color: var(--cyan);    text-shadow: 0 0 40px rgba(0,229,255,.5),  0 0 80px rgba(0,229,255,.2); }
+.t-letter.space { display: inline-block; width: .28em; }
+.row-studio {
+  margin-top: -0.12em;
+}
+.row-studio .t-letter {
+  font-family: var(--font-s);
+  font-style: italic; font-weight: 400;
+  font-size: clamp(3.8rem, 9vw, 8.6rem);
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(240,238,235,.28);
+}
+.row-studio .t-letter.lit {
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(0,229,255,.55);
+  text-shadow: 0 0 30px rgba(0,229,255,.3);
+}
+
+/* entry animation */
+.t-letter {
+  opacity: 0;
+  animation: letter-in .9s cubic-bezier(.16,1,.3,1) forwards;
+}
+@keyframes letter-in {
+  from { opacity:0; transform: rotateX(-90deg) translateZ(60px) translateY(40px); }
+  to   { opacity:1; transform: rotateX(0)      translateZ(0)     translateY(0); }
+}
+
+
+
+/* ─── Section commons ─── */
+section { padding: 120px 48px; }
+
+.section-tag {
+  font-size: .62rem; letter-spacing: .3em; text-transform: uppercase;
+  color: var(--muted); display: flex; align-items: center; gap: 12px;
+  margin-bottom: 24px;
+}
+.section-tag::after { content: ''; flex: 0 0 28px; height: 1px; background: var(--muted); }
+
+.section-h2 {
+  font-size: clamp(2.4rem, 5vw, 4.2rem);
+  font-weight: 700; letter-spacing: -.04em; line-height: .92;
+  margin-bottom: 24px;
+}
+.section-h2 em {
+  font-family: var(--font-s); font-style: italic; font-weight: 400;
+  color: var(--cyan);
+}
+
+hr.thin { border: none; border-top: 1px solid var(--line); }
+
+/* ─── What we do ─── */
+#services { background: var(--bg); max-width: 100%; }
+.services-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 2px;
+  background: var(--line); margin-top: 72px;
+}
+.svc-card {
+  background: var(--bg); padding: 64px 56px;
+  position: relative; overflow: hidden;
+  transition: background .35s;
+}
+.svc-card:hover { background: var(--card); }
+.svc-card::after {
+  content: ''; position: absolute; bottom: 0; left: 0; right: 0;
+  height: 2px; background: linear-gradient(90deg, var(--cyan), var(--magenta));
+  transform: scaleX(0); transform-origin: left;
+  transition: transform .5s cubic-bezier(.16,1,.3,1);
+}
+.svc-card:hover::after { transform: scaleX(1); }
+
+.svc-num {
+  font-size: .6rem; letter-spacing: .2em; color: var(--muted);
+  margin-bottom: 40px; display: block;
+}
+.svc-icon {
+  width: 52px; height: 52px; margin-bottom: 32px;
+  border: 1px solid var(--line); display: flex; align-items: center; justify-content: center;
+}
+.svc-icon svg { width: 24px; height: 24px; stroke: var(--cyan); fill: none; stroke-width: 1.5; }
+.svc-title {
+  font-size: 1.8rem; font-weight: 700; letter-spacing: -.03em; margin-bottom: 16px;
+}
+.svc-desc {
+  font-size: .9rem; font-weight: 300; color: var(--muted); line-height: 1.75;
+  margin-bottom: 36px;
+}
+.svc-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+.tag {
+  font-size: .6rem; letter-spacing: .15em; text-transform: uppercase;
+  border: 1px solid var(--line); color: var(--muted);
+  padding: 4px 12px; transition: border-color .2s, color .2s;
+}
+.svc-card:hover .tag { border-color: rgba(0,229,255,.25); color: rgba(0,229,255,.7); }
+
+/* ─── Work ─── */
+#work { background: var(--surface); }
+.work-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px;
+  background: var(--line); margin-top: 64px;
+}
+.work-item {
+  background: var(--card); aspect-ratio: 3/4;
+  position: relative; overflow: hidden; cursor: none;
+}
+.work-bg {
+  position: absolute; inset: 0;
+  transition: transform .6s cubic-bezier(.16,1,.3,1);
+}
+.work-item:hover .work-bg { transform: scale(1.04); }
+.work-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(to top, rgba(11,11,11,.92) 40%, transparent);
+}
+.work-info {
+  position: absolute; bottom: 0; left: 0; padding: 32px;
+  transform: translateY(6px); transition: transform .4s cubic-bezier(.16,1,.3,1);
+}
+.work-item:hover .work-info { transform: none; }
+.work-cat {
+  font-size: .6rem; letter-spacing: .25em; text-transform: uppercase;
+  color: var(--muted); display: block; margin-bottom: 8px;
+  transition: color .3s;
+}
+.work-item:hover .work-cat { color: var(--cyan); }
+.work-title { font-size: 1.2rem; font-weight: 700; letter-spacing: -.02em; }
+.work-border {
+  position: absolute; inset: 0; border: 1px solid transparent;
+  transition: border-color .35s; pointer-events: none;
+}
+.work-item:hover .work-border { border-color: rgba(0,229,255,.3); }
+
+/* work bg patterns */
+.bg-app { background: linear-gradient(135deg, #0d1f2d 0%, #0b0b0b 100%); }
+.bg-video { background: linear-gradient(135deg, #1a0d1a 0%, #0b0b0b 100%); }
+.bg-brand { background: linear-gradient(135deg, #0d1a14 0%, #0b0b0b 100%); }
+
+.bg-app::before, .bg-video::before, .bg-brand::before {
+  content: ''; position: absolute; inset: 0;
+  background-image: radial-gradient(circle, rgba(255,255,255,.03) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+.bg-app-label {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  font-size: 5.5rem; font-weight: 900; letter-spacing: -.06em;
+  color: rgba(0,229,255,.05); white-space: nowrap;
+}
+.bg-video-label {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  font-size: 5.5rem; font-weight: 900; letter-spacing: -.06em;
+  color: rgba(255,0,229,.05); white-space: nowrap;
+}
+
+/* ─── Numbers ─── */
+#numbers {
+  background: var(--bg);
+  display: flex; flex-direction: column; align-items: center;
+  padding: 100px 48px;
+}
+.numbers-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 0; border: 1px solid var(--line); max-width: 900px; width: 100%;
+  margin-top: 64px;
+}
+.num-item {
+  padding: 56px 40px; text-align: center;
+  border-right: 1px solid var(--line);
+  position: relative;
+}
+.num-item:last-child { border-right: none; }
+.num-val {
+  font-size: 3.6rem; font-weight: 700; letter-spacing: -.04em;
+  line-height: 1; margin-bottom: 12px;
+  background: linear-gradient(135deg, var(--cyan), var(--magenta));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.num-label {
+  font-size: .62rem; letter-spacing: .2em; text-transform: uppercase; color: var(--muted);
+}
+
+/* ─── Process ─── */
+#process { background: var(--surface); }
+.process-list {
+  margin-top: 72px; display: flex; flex-direction: column;
+  border-top: 1px solid var(--line);
+}
+.process-item {
+  display: grid; grid-template-columns: 80px 1fr 1fr;
+  align-items: center; gap: 40px;
+  padding: 36px 0; border-bottom: 1px solid var(--line);
+  transition: background .25s;
+  position: relative; overflow: hidden; cursor: default;
+}
+.process-item::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(90deg, rgba(0,229,255,.03), transparent);
+  transform: translateX(-100%);
+  transition: transform .5s cubic-bezier(.16,1,.3,1);
+}
+.process-item:hover::after { transform: translateX(0); }
+.proc-n {
+  font-size: .62rem; letter-spacing: .15em; color: var(--muted);
+  font-family: var(--font-h);
+}
+.proc-title { font-size: 1.3rem; font-weight: 600; letter-spacing: -.02em; }
+.proc-desc { font-size: .88rem; color: var(--muted); line-height: 1.65; font-weight: 300; }
+
+/* ─── Contact ─── */
+#contact { background: var(--bg); }
+.contact-wrap {
+  max-width: 680px; margin: 0 auto; text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 40px;
+}
+.contact-h { font-size: clamp(2.8rem, 6vw, 5.5rem); font-weight: 700; letter-spacing: -.04em; line-height: .9; }
+.contact-h em { font-family: var(--font-s); font-style: italic; font-weight: 400; color: var(--muted); }
+
+.contact-email {
+  font-size: 1rem; font-weight: 300;
+  color: var(--muted); text-decoration: none; cursor: none;
+  border-bottom: 1px solid var(--line); padding-bottom: 4px;
+  transition: color .2s, border-color .2s;
+}
+.contact-email:hover { color: var(--cyan); border-color: var(--cyan); }
+
+/* ─── Footer ─── */
+footer {
+  padding: 40px 48px;
+  border-top: 1px solid var(--line);
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 24px; flex-wrap: wrap;
+}
+.footer-logo { font-size: .85rem; font-weight: 700; letter-spacing: .1em; }
+.footer-logo span { color: var(--cyan); }
+.footer-copy { font-size: .62rem; letter-spacing: .15em; text-transform: uppercase; color: var(--muted); }
+
+/* ─── Reveal ─── */
+.r { opacity: 0; transform: translateY(28px); transition: opacity .7s cubic-bezier(.16,1,.3,1), transform .7s cubic-bezier(.16,1,.3,1); }
+.r.in { opacity: 1; transform: none; }
+
+/* ─── Responsive ─── */
+@media (max-width: 768px) {
+  nav { padding: 18px 24px; }
+  .nav-links { display: none; }
+  #hero { padding: 0 24px 64px; }
+  section { padding: 80px 24px; }
+  .services-grid { grid-template-columns: 1fr; }
+  .work-grid { grid-template-columns: 1fr; }
+  .numbers-grid { grid-template-columns: 1fr; }
+  .num-item { border-right: none; border-bottom: 1px solid var(--line); }
+  .num-item:last-child { border-bottom: none; }
+  .process-item { grid-template-columns: 48px 1fr; }
+  .proc-desc { display: none; }
+  footer { flex-direction: column; text-align: center; }
+}
+</style>
+</head>
+<body>
+
+<div id="c-dot"></div>
+<div id="c-ring"></div>
+
+<!-- NAV -->
+<nav id="nav">
+  <a class="nav-logo" href="#">SHIFT<span>.</span></a>
+  <ul class="nav-links">
+    <li><a href="#services">Services</a></li>
+    <li><a href="#work">Work</a></li>
+    <li><a href="#process">Process</a></li>
+  </ul>
+  <button class="nav-cta" onclick="document.getElementById('contact').scrollIntoView({behavior:'smooth'})">Start a project</button>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <canvas id="hero-canvas"></canvas>
+
+  <div class="hero-inner">
+    <div class="hero-tag r">App Development &amp; Content Creation</div>
+
+    <!-- 3D Animated Title -->
+    <div id="title-3d" aria-label="Shift Studio">
+      <div class="title-row row-shift" id="row-shift"></div>
+      <div class="title-row row-studio" id="row-studio"></div>
+    </div>
+
+    <p class="hero-sub r" style="transition-delay:.2s">
+      앱 개발과 유튜브 콘텐츠 — 두 가지를 함께. 제품을 만들고, 세상에 알립니다.
+    </p>
+
+    <div class="hero-actions r" style="transition-delay:.3s">
+      <button class="btn-fill" onclick="document.getElementById('contact').scrollIntoView({behavior:'smooth'})">프로젝트 시작하기</button>
+      <button class="btn-outline" onclick="document.getElementById('work').scrollIntoView({behavior:'smooth'})">작업물 보기</button>
+    </div>
+  </div>
+
+  <div class="scroll-hint">
+    <span>Scroll</span>
+    <div class="scroll-line"></div>
+  </div>
+</section>
+
+<hr class="thin"/>
+
+<!-- SERVICES -->
+<section id="services">
+  <div class="section-tag r">What we do</div>
+  <h2 class="section-h2 r" style="transition-delay:.1s">두 가지를<br/><em>하나로</em></h2>
+
+  <div class="services-grid">
+
+    <!-- App Dev -->
+    <div class="svc-card r" style="transition-delay:.15s">
+      <span class="svc-num">01</span>
+      <div class="svc-icon">
+        <svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18.01"/></svg>
+      </div>
+      <h3 class="svc-title">App Development</h3>
+      <p class="svc-desc">
+        아이디어를 앱으로. iOS·Android·웹 — 어느 플랫폼이든 빠르고 완성도 높게 구현합니다. 기획부터 배포까지 함께합니다.
+      </p>
+      <div class="svc-tags">
+        <span class="tag">iOS</span>
+        <span class="tag">Android</span>
+        <span class="tag">React Native</span>
+        <span class="tag">Web App</span>
+        <span class="tag">UI/UX</span>
+      </div>
+    </div>
+
+    <!-- YouTube -->
+    <div class="svc-card r" style="transition-delay:.25s">
+      <span class="svc-num">02</span>
+      <div class="svc-icon">
+        <svg viewBox="0 0 24 24" style="stroke:var(--magenta)">
+          <polygon points="5 3 19 12 5 21 5 3"/>
+        </svg>
+      </div>
+      <h3 class="svc-title">YouTube Content</h3>
+      <p class="svc-desc">
+        채널 기획부터 촬영, 편집, 업로드까지. 구독자를 팬으로 만드는 콘텐츠를 전략적으로 제작합니다.
+      </p>
+      <div class="svc-tags">
+        <span class="tag">채널 전략</span>
+        <span class="tag">영상 편집</span>
+        <span class="tag">쇼츠</span>
+        <span class="tag">썸네일</span>
+        <span class="tag">SEO</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<hr class="thin"/>
+
+<!-- WORK -->
+<section id="work" style="padding-left:0;padding-right:0">
+  <div style="padding: 0 48px 0" class="r">
+    <div class="section-tag">Selected Work</div>
+    <h2 class="section-h2" style="transition-delay:.1s">최근 <em>작업물</em></h2>
+  </div>
+
+  <div class="work-grid" style="margin-top:64px">
+
+    <div class="work-item r" style="transition-delay:.1s">
+      <div class="work-bg bg-app">
+        <div class="bg-app-label">APP</div>
+      </div>
+      <div class="work-overlay"></div>
+      <div class="work-info">
+        <span class="work-cat">App Development</span>
+        <div class="work-title">Fitness Tracker Pro</div>
+      </div>
+      <div class="work-border"></div>
+    </div>
+
+    <div class="work-item r" style="transition-delay:.2s">
+      <div class="work-bg bg-video">
+        <div class="bg-video-label">YT</div>
+      </div>
+      <div class="work-overlay"></div>
+      <div class="work-info">
+        <span class="work-cat">YouTube Channel</span>
+        <div class="work-title">Tech Review Series</div>
+      </div>
+      <div class="work-border"></div>
+    </div>
+
+    <div class="work-item r" style="transition-delay:.3s">
+      <div class="work-bg bg-brand">
+        <div class="bg-app-label" style="color:rgba(0,229,255,.04)">WEB</div>
+      </div>
+      <div class="work-overlay"></div>
+      <div class="work-info">
+        <span class="work-cat">Web App</span>
+        <div class="work-title">Commerce Dashboard</div>
+      </div>
+      <div class="work-border"></div>
+    </div>
+
+  </div>
+</section>
+
+<hr class="thin"/>
+
+<!-- NUMBERS -->
+<section id="numbers">
+  <div class="section-tag r" style="justify-content:center">By the numbers</div>
+  <h2 class="section-h2 r" style="transition-delay:.1s;text-align:center">결과로<br/><em>말합니다</em></h2>
+
+  <div class="numbers-grid">
+    <div class="num-item r" style="transition-delay:.1s">
+      <div class="num-val count" data-to="80" data-suffix="+">0</div>
+      <div class="num-label">앱 & 프로젝트</div>
+    </div>
+    <div class="num-item r" style="transition-delay:.2s">
+      <div class="num-val count" data-to="12" data-suffix="M+">0</div>
+      <div class="num-label">유튜브 누적 조회수</div>
+    </div>
+    <div class="num-item r" style="transition-delay:.3s">
+      <div class="num-val count" data-to="98" data-suffix="%">0</div>
+      <div class="num-label">클라이언트 만족도</div>
+    </div>
+  </div>
+</section>
+
+<hr class="thin"/>
+
+<!-- PROCESS -->
+<section id="process">
+  <div class="section-tag r">How we work</div>
+  <h2 class="section-h2 r" style="transition-delay:.1s">단순하고<br/><em>빠르게</em></h2>
+
+  <div class="process-list">
+    <div class="process-item r" style="transition-delay:.1s">
+      <span class="proc-n">01</span>
+      <div class="proc-title">Discovery</div>
+      <div class="proc-desc">목표와 타겟을 정의합니다. 앱이든 채널이든, 방향을 먼저 맞춥니다.</div>
+    </div>
+    <div class="process-item r" style="transition-delay:.18s">
+      <span class="proc-n">02</span>
+      <div class="proc-title">Design & Plan</div>
+      <div class="proc-desc">UI·기획·콘텐츠 전략을 설계합니다. 실행 전에 구조를 완성합니다.</div>
+    </div>
+    <div class="process-item r" style="transition-delay:.26s">
+      <span class="proc-n">03</span>
+      <div class="proc-title">Build & Produce</div>
+      <div class="proc-desc">앱을 개발하고, 영상을 제작합니다. 빠르고, 타협 없이.</div>
+    </div>
+    <div class="process-item r" style="transition-delay:.34s">
+      <span class="proc-n">04</span>
+      <div class="proc-title">Launch & Grow</div>
+      <div class="proc-desc">배포하고, 업로드하고, 성장시킵니다. 런칭이 끝이 아닙니다.</div>
+    </div>
+  </div>
+</section>
+
+<hr class="thin"/>
+
+<!-- CONTACT -->
+<section id="contact">
+  <div class="contact-wrap">
+    <div class="section-tag r" style="justify-content:center">Get in touch</div>
+    <h2 class="contact-h r" style="transition-delay:.1s">
+      다음 프로젝트,<br/><em>함께 하세요</em>
+    </h2>
+    <p class="r" style="transition-delay:.2s;font-size:.9rem;color:var(--muted);font-weight:300;line-height:1.7;max-width:420px;text-align:center">
+      앱 개발이든 유튜브 채널이든 — 어떤 단계에 있든 먼저 연락주세요.
+    </p>
+    <a href="mailto:hello@shift.studio" class="contact-email r" style="transition-delay:.3s">
+      hello@shift.studio
+    </a>
+    <button class="btn-fill r" style="transition-delay:.38s;padding:18px 52px;font-size:.78rem">
+      프로젝트 시작하기 →
+    </button>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">SHIFT<span>.</span></div>
+  <div class="footer-copy">© 2025 Shift Studio — All rights reserved</div>
+</footer>
+
+<script>
+/* cursor */
+const dot = document.getElementById('c-dot');
+const ring = document.getElementById('c-ring');
+document.addEventListener('mousemove', e => {
+  dot.style.left = e.clientX + 'px'; dot.style.top = e.clientY + 'px';
+  ring.style.left = e.clientX + 'px'; ring.style.top = e.clientY + 'px';
+});
+
+/* nav scroll */
+window.addEventListener('scroll', () => {
+  document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 40);
+}, {passive: true});
+
+/* hero canvas: minimal particle grid */
+(function() {
+  const cv = document.getElementById('hero-canvas');
+  const cx = cv.getContext('2d');
+  function resize() { cv.width = cv.offsetWidth; cv.height = cv.offsetHeight; }
+  resize(); window.addEventListener('resize', resize);
+
+  const pts = Array.from({length:50}, () => ({
+    x: Math.random(), y: Math.random(),
+    vx: (Math.random()-.5)*.0003, vy: (Math.random()-.5)*.0003,
+    r: Math.random()*.8+.3, c: Math.random()>.6
+  }));
+
+  let frame = 0;
+  (function draw() {
+    cx.clearRect(0, 0, cv.width, cv.height);
+    // subtle grid
+    cx.strokeStyle = 'rgba(255,255,255,0.025)'; cx.lineWidth = 1;
+    for (let x=0; x<cv.width; x+=80) { cx.beginPath(); cx.moveTo(x,0); cx.lineTo(x,cv.height); cx.stroke(); }
+    for (let y=0; y<cv.height; y+=80) { cx.beginPath(); cx.moveTo(0,y); cx.lineTo(cv.width,y); cx.stroke(); }
+
+    // moving scan
+    const sy = (frame*.8) % cv.height;
+    const g = cx.createLinearGradient(0,sy-60,0,sy+60);
+    g.addColorStop(0,'transparent'); g.addColorStop(.5,'rgba(0,229,255,0.04)'); g.addColorStop(1,'transparent');
+    cx.fillStyle = g; cx.fillRect(0, sy-60, cv.width, 120);
+
+    pts.forEach(p => {
+      p.x += p.vx; p.y += p.vy;
+      if(p.x<0) p.x=1; if(p.x>1) p.x=0;
+      if(p.y<0) p.y=1; if(p.y>1) p.y=0;
+      const px = p.x*cv.width, py = p.y*cv.height;
+      cx.beginPath(); cx.arc(px,py,p.r,0,Math.PI*2);
+      cx.fillStyle = p.c ? 'rgba(0,229,255,.25)' : 'rgba(255,0,229,.2)';
+      cx.shadowBlur=10; cx.shadowColor=p.c?'#00e5ff':'#ff00e5';
+      cx.fill(); cx.shadowBlur=0;
+    });
+
+    // connections
+    cx.lineWidth = .4;
+    for(let i=0;i<pts.length;i++) for(let j=i+1;j<pts.length;j++) {
+      const dx=(pts[i].x-pts[j].x)*cv.width, dy=(pts[i].y-pts[j].y)*cv.height;
+      const d=Math.sqrt(dx*dx+dy*dy);
+      if(d<100) {
+        cx.beginPath();
+        cx.moveTo(pts[i].x*cv.width,pts[i].y*cv.height);
+        cx.lineTo(pts[j].x*cv.width,pts[j].y*cv.height);
+        cx.strokeStyle=`rgba(0,229,255,${.06*(1-d/100)})`;
+        cx.stroke();
+      }
+    }
+    frame++; requestAnimationFrame(draw);
+  })();
+})();
+
+/* scroll reveal */
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => { if(e.isIntersecting) { e.target.classList.add('in'); obs.unobserve(e.target); } });
+}, {threshold:.12});
+document.querySelectorAll('.r').forEach(el => obs.observe(el));
+
+/* count-up */
+const cobs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if(!e.isIntersecting) return;
+    const el = e.target;
+    const to = +el.dataset.to, suf = el.dataset.suffix||'';
+    let v=0, dur=1600, step=16, inc=to/(dur/step);
+    const t = setInterval(()=>{
+      v+=inc; if(v>=to){v=to;clearInterval(t);}
+      el.textContent = Math.floor(v) + suf;
+    }, step);
+    cobs.unobserve(el);
+  });
+}, {threshold:.5});
+document.querySelectorAll('.count').forEach(el => cobs.observe(el));
+
+/* immediate reveal for hero elements */
+setTimeout(() => document.querySelectorAll('#hero .r').forEach(el => el.classList.add('in')), 100);
+
+/* ─── 3D Title Build ─── */
+(function() {
+  const SHIFT   = 'SHIFT';
+  const STUDIO  = 'STUDIO';
+  const rowS = document.getElementById('row-shift');
+  const rowT = document.getElementById('row-studio');
+
+  // Build SHIFT letters
+  SHIFT.split('').forEach((ch, i) => {
+    const el = document.createElement('span');
+    el.className = 't-letter' + (i % 2 === 0 ? ' cyan' : '');
+    el.textContent = ch;
+    el.style.animationDelay = (0.05 + i * 0.07) + 's';
+    rowS.appendChild(el);
+  });
+
+  // Space between rows handled by margin; build STUDIO
+  STUDIO.split('').forEach((ch, i) => {
+    const el = document.createElement('span');
+    el.className = 't-letter' + ((i === 0 || i === 3) ? ' lit' : '');
+    el.textContent = ch;
+    el.style.animationDelay = (0.45 + i * 0.07) + 's';
+    rowT.appendChild(el);
+  });
+
+  // Mouse parallax
+  const titleEl = document.getElementById('title-3d');
+  let tx = 0, ty = 0, cx2 = 0, cy2 = 0;
+  document.addEventListener('mousemove', e => {
+    const vw = window.innerWidth, vh = window.innerHeight;
+    tx = ((e.clientX / vw) - .5) * 22;   // -11 to +11 deg
+    ty = ((e.clientY / vh) - .5) * -14;  // -7  to +7  deg
+  });
+
+  // Per-letter depth parallax
+  const letters = document.querySelectorAll('.t-letter');
+
+  let raf;
+  (function animate() {
+    cx2 += (tx - cx2) * 0.06;
+    cy2 += (ty - cy2) * 0.06;
+    titleEl.style.transform =
+      `perspective(900px) rotateY(${cx2}deg) rotateX(${cy2}deg)`;
+
+    // subtle per-letter z-offset based on column position
+    letters.forEach((l, i) => {
+      const depth = Math.sin(Date.now() * 0.0008 + i * 0.6) * 14;
+      l.style.transform = `translateZ(${depth}px)`;
+    });
+
+    raf = requestAnimationFrame(animate);
+  })();
+
+  // Pause on page hidden
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) cancelAnimationFrame(raf);
+    else { raf = requestAnimationFrame(arguments.callee); }
+  });
+})();
+
+</script>
+</body>
+</html>
