@@ -11,8 +11,9 @@
     header { text-align: center; padding: 40px 0 24px; }
     header h1 { font-size: 28px; font-weight: 700; color: #4fc3f7; }
     header p { color: #90a4ae; margin-top: 8px; font-size: 14px; }
-    .back { display: inline-flex; align-items: center; gap: 6px; color: #4fc3f7; text-decoration: none; font-size: 14px; margin-bottom: 24px; }
-    .back:hover { text-decoration: underline; }
+    .lang-selector { display: flex; justify-content: flex-end; margin-bottom: 20px; }
+    .lang-selector select { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: #e0e6ed; font-size: 14px; padding: 7px 32px 7px 12px; cursor: pointer; outline: none; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2390a4ae' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; }
+    .lang-selector select:hover { border-color: #4fc3f7; background-color: rgba(79,195,247,0.08); }
     .updated { text-align: center; color: #546e7a; font-size: 13px; margin-bottom: 24px; }
     .section { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 24px; margin-bottom: 16px; }
     .section h2 { font-size: 16px; font-weight: 700; color: #4fc3f7; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
@@ -30,7 +31,17 @@
 </head>
 <body>
 <div class="container">
-  <a class="back" href="index.html">← Language select</a>
+  <div class="lang-selector">
+    <select onchange="location.href=this.value">
+      <option value="index.html">🇰🇷 한국어</option>
+      <option value="en.html" selected>🇺🇸 English</option>
+      <option value="ja.html">🇯🇵 日本語</option>
+      <option value="zh.html">🇨🇳 中文</option>
+      <option value="es.html">🇪🇸 Español</option>
+      <option value="vi.html">🇻🇳 Tiếng Việt</option>
+      <option value="id.html">🇮🇩 Bahasa Indonesia</option>
+    </select>
+  </div>
   <header>
     <h1>WordSnap</h1>
     <p>Privacy Policy</p>
